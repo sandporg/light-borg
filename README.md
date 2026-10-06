@@ -1,3 +1,10 @@
+# light-borg
+
+Fork of [lightphone/light-sdk](https://github.com/lightphone/light-sdk). `main` is the shared SDK. Each tool has its own branch:
+
+- [`chess`](https://github.com/sandporg/light-borg/tree/chess) — chess for the Light Phone III
+- [`lifestyle`](https://github.com/sandporg/light-borg/tree/lifestyle) — lifestyle for the Light Phone III
+
 # light-sdk
 or: a tool for building Tools
 
