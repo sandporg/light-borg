@@ -8,7 +8,7 @@ import java.util.Locale
  * Add an entry here to show it on Today, meals, and goals. Logged amounts and
  * goals are stored by [Nutrient.id], so existing saves keep working.
  * Set [Nutrient.hiddenByDefault] so a new nutrient stays off the home screen
- * until the user turns it on in Goals.
+ * until the user turns it on in Macros.
  */
 internal data class Nutrient(
     val id: String,
@@ -17,11 +17,15 @@ internal data class Nutrient(
     val defaultGoal: Double,
     val hiddenByDefault: Boolean = false,
 ) {
-    fun fieldLabel(): String = "$label ($unit)"
+    fun fieldLabel(waterUnit: String = unit): String {
+        val shown = if (id == Nutrients.WATER) waterUnit else unit
+        return "$label ($shown)"
+    }
 }
 
 internal object Nutrients {
     const val CALORIES = "calories"
+    const val WATER = "water"
 
     val all: List<Nutrient> = listOf(
         Nutrient(CALORIES, "Calories", "kcal", 2000.0),
@@ -116,13 +120,29 @@ internal fun filterSavedMeals(meals: List<SavedMeal>, query: String): List<Saved
     }
 }
 
-internal fun mealSummary(amounts: Map<String, Double>): String {
+internal fun mealSummary(amounts: Map<String, Double>, waterUnit: String = "ml"): String {
     val calories = amounts[Nutrients.CALORIES] ?: 0.0
     if (calories > 0.0) return "${formatAmount(calories)} kcal"
     val other = Nutrients.all.firstOrNull { nutrient ->
         nutrient.id != Nutrients.CALORIES && (amounts[nutrient.id] ?: 0.0) > 0.0
     }
     if (other == null) return "0 kcal"
-    val amount = amounts[other.id] ?: 0.0
-    return "${formatAmount(amount)} ${other.unit} ${other.label.lowercase(Locale.US)}"
+    val stored = amounts[other.id] ?: 0.0
+    val amount = if (other.id == Nutrients.WATER) waterAmountForDisplay(stored, waterUnit) else stored
+    val unit = if (other.id == Nutrients.WATER) waterUnit else other.unit
+    return "${formatAmount(amount)} $unit ${other.label.lowercase(Locale.US)}"
 }
+
+private const val MILLILITERS_PER_FLUID_OUNCE = 29.5735295625
+
+internal fun millilitersToOunces(milliliters: Double): Double =
+    kotlin.math.round(milliliters / MILLILITERS_PER_FLUID_OUNCE * 10.0) / 10.0
+
+internal fun ouncesToMilliliters(ounces: Double): Double =
+    kotlin.math.round(ounces * MILLILITERS_PER_FLUID_OUNCE * 10.0) / 10.0
+
+internal fun waterAmountForDisplay(storedMilliliters: Double, unit: String): Double =
+    if (unit == "oz") millilitersToOunces(storedMilliliters) else storedMilliliters
+
+internal fun waterAmountForStorage(entered: Double, unit: String): Double =
+    if (unit == "oz") ouncesToMilliliters(entered) else entered

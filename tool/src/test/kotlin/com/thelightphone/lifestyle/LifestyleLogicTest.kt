@@ -203,6 +203,13 @@ class LifestyleLogicTest {
             "250 ml water",
             mealSummary(mapOf("water" to 250.0)),
         )
+        assertEquals(84.5, waterAmountForDisplay(2500.0, "oz"))
+        assertEquals("5' 10\"", formatHeight(70.0, false))
+        assertEquals("6' 0\"", formatHeight(72.0, false))
+        assertEquals("178 cm", formatHeight(70.0, true))
+        assertEquals("150 lb", formatWeight(150.0, false))
+        assertEquals("68 kg", formatWeight(150.0, true))
+        assertEquals(8.5, mealSummary(mapOf("water" to 250.0), "oz").substringBefore(" ").toDouble())
         assertEquals(1f, progressFraction(20.0, 0.0))
         assertEquals(0.5f, progressFraction(1000.0, 2000.0))
     }

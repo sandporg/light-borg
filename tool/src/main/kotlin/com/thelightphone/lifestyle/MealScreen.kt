@@ -94,7 +94,12 @@ internal class MealViewModel(
             _error.value = "Enter a number."
             return
         }
-        _draft.value = draft.copy(amounts = draft.amounts.withAmount(nutrientId, amount))
+        val stored = if (nutrientId == Nutrients.WATER) {
+            waterAmountForStorage(amount, repository.data.value.waterUnit)
+        } else {
+            amount
+        }
+        _draft.value = draft.copy(amounts = draft.amounts.withAmount(nutrientId, stored))
     }
 
     fun saveTemplate() {
@@ -161,6 +166,7 @@ internal class MealScreen(
 
     @Composable
     override fun Content() {
+        val data by repository.data.collectAsState()
         val draft by viewModel.draft.collectAsState()
         val localError by viewModel.error.collectAsState()
         val saveError by repository.error.collectAsState()
@@ -213,7 +219,14 @@ internal class MealScreen(
                     Column(modifier = Modifier.padding(horizontal = 1f.gridUnitsAsDp())) {
                         MealAmountFields(
                             name = current.name,
-                            amounts = current.amounts,
+                            amounts = current.amounts.mapValues { (id, amount) ->
+                                if (id == Nutrients.WATER) {
+                                    waterAmountForDisplay(amount, data.waterUnit)
+                                } else {
+                                    amount
+                                }
+                            },
+                            waterUnit = data.waterUnit,
                             onEditName = {
                                 navigateTo({
                                     TextPromptScreen(
@@ -229,14 +242,16 @@ internal class MealScreen(
                             },
                             onEditAmount = { nutrient ->
                                 val amount = current.amounts[nutrient.id] ?: 0.0
+                                val shown = if (nutrient.id == Nutrients.WATER) {
+                                    waterAmountForDisplay(amount, data.waterUnit)
+                                } else {
+                                    amount
+                                }
                                 navigateTo({
-                                    TextPromptScreen(
+                                    DialpadScreen(
                                         it,
-                                        title = nutrient.fieldLabel(),
-                                        initialValue = formatAmount(amount),
-                                        submitLabel = "SAVE",
-                                        showBackButton = false,
-                                        centerClose = true,
+                                        title = nutrient.fieldLabel(data.waterUnit),
+                                        initialValue = formatAmount(shown),
                                     )
                                 }) { value -> viewModel.setAmount(nutrient.id, value) }
                             },

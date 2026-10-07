@@ -116,13 +116,11 @@ internal class SetsRepsScreen(
                 placeholder = "3",
                 onClick = {
                     navigateTo({
-                        TextPromptScreen(
+                        DialpadScreen(
                             it,
                             title = "Sets",
                             initialValue = sets,
-                            submitLabel = "SAVE",
-                            showBackButton = false,
-                            centerClose = true,
+                            allowDecimal = false,
                         )
                     }) { value -> viewModel.setSets(value) }
                 },
@@ -136,13 +134,11 @@ internal class SetsRepsScreen(
                 placeholder = "10",
                 onClick = {
                     navigateTo({
-                        TextPromptScreen(
+                        DialpadScreen(
                             it,
                             title = "Reps",
                             initialValue = reps,
-                            submitLabel = "SAVE",
-                            showBackButton = false,
-                            centerClose = true,
+                            allowDecimal = false,
                         )
                     }) { value -> viewModel.setReps(value) }
                 },

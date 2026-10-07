@@ -72,8 +72,32 @@ internal class LifestyleRepository(
     }
 
     suspend fun setNutrientVisible(nutrientId: String, visible: Boolean): Boolean {
-        if (Nutrients.byId(nutrientId) == null) return false
+        if (Nutrients.byId(nutrientId) == null || nutrientId == Nutrients.WATER) return false
         return mutate { it.withNutrientVisible(nutrientId, visible) }
+    }
+
+    suspend fun setSex(sex: String): Boolean = mutate { it.copy(sex = sex) }
+
+    suspend fun setAge(age: Int): Boolean = mutate { it.copy(age = age) }
+
+    suspend fun setHeight(inches: Double): Boolean = mutate { it.copy(height = inches) }
+
+    suspend fun setWeight(pounds: Double): Boolean = mutate { it.copy(weight = pounds) }
+
+    suspend fun setActivity(activity: String): Boolean = mutate { it.copy(activity = activity) }
+
+    suspend fun setUnits(units: String): Boolean {
+        if (units != "imperial" && units != "metric") return false
+        return mutate { it.copy(units = units) }
+    }
+
+    suspend fun setWaterUnit(unit: String): Boolean {
+        if (unit != "ml" && unit != "oz") return false
+        return mutate { it.copy(waterUnit = unit) }
+    }
+
+    suspend fun setWaterGoal(displayAmount: Double): Boolean = mutate {
+        it.withGoal(Nutrients.WATER, waterAmountForStorage(displayAmount, it.waterUnit))
     }
 
     suspend fun addUserExercise(name: String): Exercise? {

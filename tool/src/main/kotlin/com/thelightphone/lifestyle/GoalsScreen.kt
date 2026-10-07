@@ -78,7 +78,8 @@ internal class GoalsScreen(
         val goals = resolvedGoals(data.goals)
 
         LifestyleScaffold(
-            title = "Goals",
+            title = "Macros",
+            onBack = { goBack() },
             bottomItems = if (!ready) {
                 emptyList()
             } else if (editing) {
@@ -89,7 +90,6 @@ internal class GoalsScreen(
             } else {
                 listOf(
                     textButton("EDIT") { viewModel.setEditing(true) },
-                    closeButton { goBack() },
                     null,
                 )
             },
@@ -108,7 +108,7 @@ internal class GoalsScreen(
                         .fillMaxWidth(),
                 ) {
                     Column(modifier = Modifier.padding(horizontal = 1f.gridUnitsAsDp())) {
-                        Nutrients.all.forEach { nutrient ->
+                        Nutrients.all.filter { it.id != Nutrients.WATER }.forEach { nutrient ->
                             val amount = goals[nutrient.id] ?: nutrient.defaultGoal
                             val visible = !data.isNutrientHidden(nutrient.id)
                             val canHide = nutrient.id != Nutrients.CALORIES
@@ -122,13 +122,10 @@ internal class GoalsScreen(
                                     placeholder = "0",
                                     onClick = {
                                         navigateTo({
-                                            TextPromptScreen(
+                                            DialpadScreen(
                                                 it,
                                                 title = nutrient.fieldLabel(),
                                                 initialValue = formatAmount(amount),
-                                                submitLabel = "SAVE",
-                                                showBackButton = false,
-                                                centerClose = true,
                                             )
                                         }) { value -> viewModel.setGoal(nutrient.id, value) }
                                     },

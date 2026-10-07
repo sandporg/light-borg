@@ -31,6 +31,13 @@ internal data class LifestyleData(
     val groups: List<ExerciseGroup> = emptyList(),
     val checks: List<ExerciseCheck> = emptyList(),
     val hiddenNutrients: List<String> = emptyList(),
+    val sex: String? = null,
+    val age: Int? = null,
+    val height: Double? = null,
+    val weight: Double? = null,
+    val activity: String? = null,
+    val waterUnit: String = "ml",
+    val units: String = "imperial",
 )
 
 @Serializable
@@ -161,8 +168,45 @@ internal fun monthCells(month: YearMonth): List<LocalDate?> {
     return cells
 }
 
+internal fun isMetric(units: String): Boolean = units == "metric"
+
+internal fun formatHeight(inches: Double, metric: Boolean): String {
+    if (metric) {
+        val centimeters = kotlin.math.round(inches * 2.54).toInt()
+        return "$centimeters cm"
+    }
+    val total = kotlin.math.round(inches).toInt().coerceAtLeast(0)
+    val feet = total / 12
+    val inch = total % 12
+    return "$feet' $inch\""
+}
+
+internal fun formatWeight(pounds: Double, metric: Boolean): String {
+    if (metric) {
+        val kilograms = kotlin.math.round(pounds * 0.45359237).toInt()
+        return "$kilograms kg"
+    }
+    return "${kotlin.math.round(pounds).toInt()} lb"
+}
+
+internal fun inchesFromCentimeters(centimeters: Int): Double = centimeters / 2.54
+
+internal fun centimetersFromInches(inches: Double): Int = kotlin.math.round(inches * 2.54).toInt()
+
+internal fun poundsFromKilograms(kilograms: Double): Double = kilograms / 0.45359237
+
+internal fun kilogramsFromPounds(pounds: Double): Int = kotlin.math.round(pounds * 0.45359237).toInt()
+
+internal val activityLevels: List<String> = listOf(
+    "Sedentary",
+    "Light",
+    "Moderate",
+    "Active",
+    "Very active",
+)
+
 internal fun LifestyleData.isNutrientHidden(id: String): Boolean =
-    id != Nutrients.CALORIES && id in hiddenNutrients
+    id != Nutrients.CALORIES && id != Nutrients.WATER && id in hiddenNutrients
 
 internal fun LifestyleData.withNutrientVisible(id: String, visible: Boolean): LifestyleData {
     if (id == Nutrients.CALORIES) {

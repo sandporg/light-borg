@@ -104,8 +104,8 @@ class TodayScreen(
                 !showingToday -> null
                 else -> LightBarButton.LightIcon(
                     icon = LightIcons.SETTINGS,
-                    onClick = { navigateTo({ GoalsScreen(it, repository) }) },
-                    contentDescription = "Goals",
+                    onClick = { navigateTo({ SettingsScreen(it, repository) }) },
+                    contentDescription = "Settings",
                 )
             },
             bottomItems = when {
@@ -150,11 +150,22 @@ class TodayScreen(
                                 horizontalArrangement = Arrangement.spacedBy(1.5f.gridUnitsAsDp()),
                             ) {
                                 row.forEach { nutrient ->
+                                    val storedCurrent = totals[nutrient.id] ?: 0.0
+                                    val storedGoal = goals[nutrient.id] ?: nutrient.defaultGoal
+                                    val water = nutrient.id == Nutrients.WATER
                                     NutrientGoalRow(
                                         label = nutrient.label,
-                                        current = totals[nutrient.id] ?: 0.0,
-                                        goal = goals[nutrient.id] ?: nutrient.defaultGoal,
-                                        unit = nutrient.unit,
+                                        current = if (water) {
+                                            waterAmountForDisplay(storedCurrent, data.waterUnit)
+                                        } else {
+                                            storedCurrent
+                                        },
+                                        goal = if (water) {
+                                            waterAmountForDisplay(storedGoal, data.waterUnit)
+                                        } else {
+                                            storedGoal
+                                        },
+                                        unit = if (water) data.waterUnit else nutrient.unit,
                                         modifier = Modifier.weight(1f),
                                     )
                                 }

@@ -189,6 +189,7 @@ internal class MealsScreen(
                                 meal = meal,
                                 editing = editing,
                                 onOpen = { openMeal(meal.id, shownDate) },
+                                waterUnit = data.waterUnit,
                                 onDelete = { confirmDelete(meal) },
                             )
                         }
@@ -223,6 +224,7 @@ internal class MealsScreen(
 private fun DayMealRow(
     meal: Meal,
     editing: Boolean,
+    waterUnit: String,
     onOpen: () -> Unit,
     onDelete: () -> Unit,
 ) {
@@ -248,7 +250,7 @@ private fun DayMealRow(
                 modifier = Modifier.fillMaxWidth(),
             )
             LightText(
-                text = mealSummary(meal.amounts),
+                text = mealSummary(meal.amounts, waterUnit),
                 variant = LightTextVariant.Detail,
                 lighten = true,
                 maxLines = 1,
@@ -397,7 +399,7 @@ internal class SavedMealPickerScreen(
                                     modifier = Modifier.fillMaxWidth(),
                                 )
                                 LightText(
-                                    text = mealSummary(meal.amounts),
+                                    text = mealSummary(meal.amounts, data.waterUnit),
                                     variant = LightTextVariant.Detail,
                                     lighten = true,
                                     maxLines = 1,

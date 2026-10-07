@@ -178,6 +178,7 @@ internal fun MealAmountFields(
     onEditName: () -> Unit,
     onEditAmount: (Nutrient) -> Unit,
     nutrients: List<Nutrient> = Nutrients.all,
+    waterUnit: String = "ml",
 ) {
     LightTextField(
         label = "Name",
@@ -187,7 +188,7 @@ internal fun MealAmountFields(
     )
     nutrients.forEach { nutrient ->
         LightTextField(
-            label = nutrient.fieldLabel(),
+            label = nutrient.fieldLabel(waterUnit),
             value = formatAmount(amounts[nutrient.id] ?: 0.0),
             placeholder = "0",
             onClick = { onEditAmount(nutrient) },
