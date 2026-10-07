@@ -109,9 +109,47 @@ class LifestyleLogicTest {
             ),
         ).toggleCheck("2026-10-05", plannedId)
 
-        val deleted = data.deleteGroup(groupId)
-        assertTrue(deleted.groups.isEmpty())
-        assertTrue(deleted.checks.isEmpty())
+        val monday = LocalDate.of(2026, 10, 5)
+        val deleted = data.deleteGroupOn(monday, groupId)
+        assertTrue(deleted.groupsFor(monday).isEmpty())
+        assertTrue(deleted.checks.none { it.date == "2026-10-05" })
+        assertEquals("Push", deleted.groupsFor(monday.minusWeeks(1)).single().name)
+    }
+
+    @Test
+    fun exerciseEditsApplyFromThatWeekForward() {
+        val monday = LocalDate.of(2026, 10, 5)
+        val nextMonday = monday.plusWeeks(1)
+        val created = LifestyleData()
+            .addGroupOn(monday, "Push")
+            .let { data ->
+                val group = data.groupsFor(monday).single()
+                data.addPlannedOn(
+                    monday,
+                    group.id,
+                    PlannedExercise(
+                        id = "planned",
+                        exerciseId = "bench",
+                        sets = 3,
+                        reps = 8,
+                        weight = 100.0,
+                    ),
+                )
+            }
+        val plannedId = created.groupsFor(monday).single().exercises.single().id
+        val edited = created.updatePlannedOn(nextMonday, plannedId, sets = 5, reps = 5, weight = 200.0)
+        assertEquals(3, edited.groupsFor(monday).single().exercises.single().sets)
+        assertEquals(100.0, edited.groupsFor(monday).single().exercises.single().weight)
+        assertEquals(5, edited.groupsFor(nextMonday).single().exercises.single().sets)
+        assertEquals(200.0, edited.groupsFor(nextMonday).single().exercises.single().weight)
+        assertEquals(5, edited.groupsFor(nextMonday.plusWeeks(1)).single().exercises.single().sets)
+    }
+
+    @Test
+    fun exerciseDetailShowsSetsRepsAndWeight() {
+        assertEquals("3 × 8", exerciseDetail(3, 8, 0.0, false))
+        assertEquals("3 × 8 × 135.5 lb", exerciseDetail(3, 8, 135.5, false))
+        assertEquals("4 × 6 × 20.5 kg", exerciseDetail(4, 6, poundsFromKilograms(20.5), true))
     }
 
     @Test
@@ -243,9 +281,9 @@ class LifestyleLogicTest {
                     ),
                 ),
             )
-            assertTrue(repository.addGroup(DayOfWeek.TUESDAY, "Pull"))
+            assertTrue(repository.addGroup(LocalDate.of(2026, 10, 6), "Pull"))
             val group = repository.data.value.groups.single()
-            assertTrue(repository.addPlannedExercise(group.id, created.id, 4, 6))
+            assertTrue(repository.addPlannedExercise(LocalDate.of(2026, 10, 6), group.id, created.id, 4, 6, 0.0))
             val planned = repository.data.value.groups.single().exercises.single()
             assertTrue(repository.toggleCheck("2026-10-06", planned.id))
             assertTrue(repository.toggleCheck("2026-10-06", planned.id))

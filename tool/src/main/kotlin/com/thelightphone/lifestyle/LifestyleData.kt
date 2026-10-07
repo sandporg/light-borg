@@ -30,6 +30,7 @@ internal data class LifestyleData(
     val userExercises: List<UserExercise> = emptyList(),
     val groups: List<ExerciseGroup> = emptyList(),
     val checks: List<ExerciseCheck> = emptyList(),
+    val weekdayPlans: List<WeekdayPlan> = emptyList(),
     val hiddenNutrients: List<String> = emptyList(),
     val sex: String? = null,
     val age: Int? = null,
@@ -68,6 +69,15 @@ internal data class ExerciseGroup(
     val weekday: Int,
     val name: String,
     val exercises: List<PlannedExercise> = emptyList(),
+    val weekStart: String = "",
+    val lineageId: String = "",
+)
+
+@Serializable
+internal data class WeekdayPlan(
+    val weekday: Int,
+    val weekStart: String,
+    val groupIds: List<String> = emptyList(),
 )
 
 @Serializable
@@ -76,6 +86,7 @@ internal data class PlannedExercise(
     val exerciseId: String,
     val sets: Int,
     val reps: Int,
+    val weight: Double = 0.0,
 )
 
 @Serializable
@@ -285,57 +296,183 @@ internal fun LifestyleData.logSavedMeal(savedId: String, date: String): Lifestyl
 internal fun LifestyleData.withGoal(nutrientId: String, amount: Double): LifestyleData =
     copy(goals = goals + (nutrientId to amount))
 
-internal fun LifestyleData.groupsOn(weekday: DayOfWeek): List<ExerciseGroup> =
-    groups.filter { it.weekday == weekday.value }
+internal fun weekStart(date: LocalDate): String = dateOnWeek(date, DayOfWeek.SUNDAY).toString()
+
+internal fun exerciseDetail(sets: Int, reps: Int, weightPounds: Double, metric: Boolean): String {
+    val base = "$sets × $reps"
+    if (weightPounds <= 0.0) return base
+    val amount = if (metric) weightPounds * 0.45359237 else weightPounds
+    val unit = if (metric) "kg" else "lb"
+    return "$base × ${formatAmount(amount)} $unit"
+}
+
+internal data class WeekFork(
+    val data: LifestyleData,
+    val groupIds: Map<String, String> = emptyMap(),
+    val plannedIds: Map<String, String> = emptyMap(),
+)
+
+internal fun LifestyleData.groupsFor(date: LocalDate): List<ExerciseGroup> {
+    val week = weekStart(date)
+    val weekday = date.dayOfWeek.value
+    val plan = weekdayPlans
+        .filter { it.weekday == weekday && it.weekStart <= week }
+        .maxByOrNull { it.weekStart }
+    if (plan != null) {
+        return plan.groupIds.mapNotNull { id -> groups.find { it.id == id } }
+    }
+    return groups.filter { it.weekday == weekday && it.weekStart.isEmpty() }
+}
+
+internal fun LifestyleData.editableWeek(date: LocalDate): WeekFork {
+    val week = weekStart(date)
+    val weekday = date.dayOfWeek.value
+    if (weekdayPlans.any { it.weekday == weekday && it.weekStart == week }) {
+        return WeekFork(this)
+    }
+    val visible = groupsFor(date)
+    if (visible.isEmpty() || visible.all { it.weekStart == week }) {
+        val ids = visible.map { it.id }
+        val plans = if (ids.isEmpty() || weekdayPlans.any { it.weekday == weekday && it.weekStart == week }) {
+            weekdayPlans
+        } else {
+            weekdayPlans + WeekdayPlan(weekday, week, ids)
+        }
+        return WeekFork(copy(weekdayPlans = plans))
+    }
+    val groupIds = mutableMapOf<String, String>()
+    val plannedIds = mutableMapOf<String, String>()
+    val copies = visible.map { group ->
+        val newGroupId = newId()
+        groupIds[group.id] = newGroupId
+        group.copy(
+            id = newGroupId,
+            weekStart = week,
+            lineageId = group.lineageId.ifEmpty { group.id },
+            exercises = group.exercises.map { planned ->
+                val newPlannedId = newId()
+                plannedIds[planned.id] = newPlannedId
+                planned.copy(id = newPlannedId)
+            },
+        )
+    }
+    val remappedChecks = checks.map { check ->
+        val replacement = plannedIds[check.plannedExerciseId]
+        if (check.date >= week && replacement != null) {
+            check.copy(plannedExerciseId = replacement)
+        } else {
+            check
+        }
+    }
+    return WeekFork(
+        data = copy(
+            groups = groups + copies,
+            checks = remappedChecks,
+            weekdayPlans = weekdayPlans + WeekdayPlan(weekday, week, copies.map { it.id }),
+        ),
+        groupIds = groupIds,
+        plannedIds = plannedIds,
+    )
+}
 
 internal fun LifestyleData.checkedIds(date: String): Set<String> =
     checks.filter { it.date == date }.map { it.plannedExerciseId }.toSet()
 
-internal fun LifestyleData.addGroup(weekday: DayOfWeek, name: String, id: String = newId()): LifestyleData =
-    copy(
-        groups = groups + ExerciseGroup(
-            id = id,
-            weekday = weekday.value,
-            name = name,
-        ),
+internal fun LifestyleData.addGroupOn(date: LocalDate, name: String): LifestyleData {
+    val fork = editableWeek(date)
+    val week = weekStart(date)
+    val weekday = date.dayOfWeek.value
+    val id = newId()
+    val group = ExerciseGroup(
+        id = id,
+        weekday = weekday,
+        name = name,
+        weekStart = week,
+        lineageId = id,
     )
+    val plans = fork.data.weekdayPlans.toMutableList()
+    val index = plans.indexOfFirst { it.weekday == weekday && it.weekStart == week }
+    if (index == -1) {
+        plans += WeekdayPlan(weekday, week, listOf(id))
+    } else {
+        plans[index] = plans[index].copy(groupIds = plans[index].groupIds + id)
+    }
+    return fork.data.copy(groups = fork.data.groups + group, weekdayPlans = plans)
+}
 
-internal fun LifestyleData.renameGroup(groupId: String, name: String): LifestyleData =
-    copy(groups = groups.map { group -> if (group.id == groupId) group.copy(name = name) else group })
-
-internal fun LifestyleData.deleteGroup(groupId: String): LifestyleData {
-    val plannedIds = groups.find { it.id == groupId }?.exercises?.map { it.id }?.toSet().orEmpty()
-    return copy(
-        groups = groups.filterNot { it.id == groupId },
-        checks = checks.filterNot { it.plannedExerciseId in plannedIds },
+internal fun LifestyleData.renameGroupOn(date: LocalDate, groupId: String, name: String): LifestyleData {
+    val fork = editableWeek(date)
+    val targetId = fork.groupIds[groupId] ?: groupId
+    return fork.data.copy(
+        groups = fork.data.groups.map { group ->
+            if (group.id == targetId) group.copy(name = name) else group
+        },
     )
 }
 
-internal fun LifestyleData.addPlanned(groupId: String, planned: PlannedExercise): LifestyleData =
-    copy(
-        groups = groups.map { group ->
-            if (group.id == groupId) group.copy(exercises = group.exercises + planned) else group
+internal fun LifestyleData.deleteGroupOn(date: LocalDate, groupId: String): LifestyleData {
+    val fork = editableWeek(date)
+    val targetId = fork.groupIds[groupId] ?: groupId
+    val week = weekStart(date)
+    val weekday = date.dayOfWeek.value
+    val plannedIds = fork.data.groups.find { it.id == targetId }?.exercises?.map { it.id }?.toSet().orEmpty()
+    return fork.data.copy(
+        groups = fork.data.groups.filterNot { it.id == targetId },
+        weekdayPlans = fork.data.weekdayPlans.map { plan ->
+            if (plan.weekday == weekday && plan.weekStart == week) {
+                plan.copy(groupIds = plan.groupIds.filterNot { it == targetId })
+            } else {
+                plan
+            }
+        },
+        checks = fork.data.checks.filterNot { it.plannedExerciseId in plannedIds },
+    )
+}
+
+internal fun LifestyleData.addPlannedOn(date: LocalDate, groupId: String, planned: PlannedExercise): LifestyleData {
+    val fork = editableWeek(date)
+    val targetId = fork.groupIds[groupId] ?: groupId
+    return fork.data.copy(
+        groups = fork.data.groups.map { group ->
+            if (group.id == targetId) group.copy(exercises = group.exercises + planned) else group
         },
     )
+}
 
-internal fun LifestyleData.updatePlanned(plannedId: String, sets: Int, reps: Int): LifestyleData =
-    copy(
-        groups = groups.map { group ->
+internal fun LifestyleData.updatePlannedOn(
+    date: LocalDate,
+    plannedId: String,
+    sets: Int,
+    reps: Int,
+    weight: Double,
+): LifestyleData {
+    val fork = editableWeek(date)
+    val targetId = fork.plannedIds[plannedId] ?: plannedId
+    return fork.data.copy(
+        groups = fork.data.groups.map { group ->
             group.copy(
                 exercises = group.exercises.map { planned ->
-                    if (planned.id == plannedId) planned.copy(sets = sets, reps = reps) else planned
+                    if (planned.id == targetId) {
+                        planned.copy(sets = sets, reps = reps, weight = weight)
+                    } else {
+                        planned
+                    }
                 },
             )
         },
     )
+}
 
-internal fun LifestyleData.deletePlanned(plannedId: String): LifestyleData =
-    copy(
-        groups = groups.map { group ->
-            group.copy(exercises = group.exercises.filterNot { it.id == plannedId })
+internal fun LifestyleData.deletePlannedOn(date: LocalDate, plannedId: String): LifestyleData {
+    val fork = editableWeek(date)
+    val targetId = fork.plannedIds[plannedId] ?: plannedId
+    return fork.data.copy(
+        groups = fork.data.groups.map { group ->
+            group.copy(exercises = group.exercises.filterNot { it.id == targetId })
         },
-        checks = checks.filterNot { it.plannedExerciseId == plannedId },
+        checks = fork.data.checks.filterNot { it.plannedExerciseId == targetId },
     )
+}
 
 internal fun LifestyleData.toggleCheck(date: String, plannedId: String): LifestyleData {
     val checked = checks.any { it.date == date && it.plannedExerciseId == plannedId }

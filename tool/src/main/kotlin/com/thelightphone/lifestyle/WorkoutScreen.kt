@@ -100,7 +100,7 @@ internal class WorkoutViewModel(
         when (val name = validateName(raw)) {
             is NameValidation.Invalid -> _error.value = name.message
             is NameValidation.Ok -> viewModelScope.launch {
-                val saved = repository.addGroup(_selectedDate.value.dayOfWeek, name.name)
+                val saved = repository.addGroup(_selectedDate.value, name.name)
                 if (saved) _editing.value = true
             }
         }
@@ -110,25 +110,29 @@ internal class WorkoutViewModel(
         when (val name = validateName(raw)) {
             is NameValidation.Invalid -> _error.value = name.message
             is NameValidation.Ok -> viewModelScope.launch {
-                repository.renameGroup(groupId, name.name)
+                repository.renameGroup(_selectedDate.value, groupId, name.name)
             }
         }
     }
 
     fun deleteGroup(groupId: String) {
-        viewModelScope.launch { repository.deleteGroup(groupId) }
+        viewModelScope.launch { repository.deleteGroup(_selectedDate.value, groupId) }
     }
 
-    fun addExercise(groupId: String, exerciseId: String, sets: Int, reps: Int) {
-        viewModelScope.launch { repository.addPlannedExercise(groupId, exerciseId, sets, reps) }
+    fun addExercise(groupId: String, exerciseId: String, sets: Int, reps: Int, weight: Double) {
+        viewModelScope.launch {
+            repository.addPlannedExercise(_selectedDate.value, groupId, exerciseId, sets, reps, weight)
+        }
     }
 
-    fun updateExercise(plannedId: String, sets: Int, reps: Int) {
-        viewModelScope.launch { repository.updatePlannedExercise(plannedId, sets, reps) }
+    fun updateExercise(plannedId: String, sets: Int, reps: Int, weight: Double) {
+        viewModelScope.launch {
+            repository.updatePlannedExercise(_selectedDate.value, plannedId, sets, reps, weight)
+        }
     }
 
     fun deleteExercise(plannedId: String) {
-        viewModelScope.launch { repository.deletePlannedExercise(plannedId) }
+        viewModelScope.launch { repository.deletePlannedExercise(_selectedDate.value, plannedId) }
     }
 
     fun toggleExercise(date: String, plannedId: String) {
@@ -158,7 +162,8 @@ internal class WorkoutScreen(
         val saveError by repository.error.collectAsState()
         val selected = selectedDate.dayOfWeek
         val date = selectedDate.toString()
-        val groups = data.groupsOn(selected)
+        val groups = data.groupsFor(selectedDate)
+        val metric = isMetric(data.units)
         val checked = data.checkedIds(date)
         val names = exercises.associateBy { it.id }
 
@@ -235,6 +240,7 @@ internal class WorkoutScreen(
                                 onDeleteExercise = { plannedId, exerciseName ->
                                     confirmDeleteExercise(plannedId, exerciseName)
                                 },
+                                metric = metric,
                             )
                         }
                     }
@@ -303,9 +309,11 @@ internal class WorkoutScreen(
                     exerciseName = picked.name,
                     initialSets = DEFAULT_SETS,
                     initialReps = DEFAULT_REPS,
+                    initialWeight = 0.0,
+                    metric = isMetric(repository.data.value.units),
                 )
             }) { setsReps ->
-                viewModel.addExercise(groupId, picked.id, setsReps.sets, setsReps.reps)
+                viewModel.addExercise(groupId, picked.id, setsReps.sets, setsReps.reps, setsReps.weight)
             }
         }
     }
@@ -317,9 +325,11 @@ internal class WorkoutScreen(
                 exerciseName = name,
                 initialSets = planned.sets,
                 initialReps = planned.reps,
+                initialWeight = planned.weight,
+                metric = isMetric(repository.data.value.units),
             )
         }) { setsReps ->
-            viewModel.updateExercise(planned.id, setsReps.sets, setsReps.reps)
+            viewModel.updateExercise(planned.id, setsReps.sets, setsReps.reps, setsReps.weight)
         }
     }
 }
@@ -336,6 +346,7 @@ private fun GroupBlock(
     onToggle: (String) -> Unit,
     onEditExercise: (PlannedExercise, String) -> Unit,
     onDeleteExercise: (String, String) -> Unit,
+    metric: Boolean,
 ) {
     Column(
         modifier = Modifier
@@ -371,6 +382,8 @@ private fun GroupBlock(
                 name = name,
                 sets = planned.sets,
                 reps = planned.reps,
+                weight = planned.weight,
+                metric = metric,
                 checked = planned.id in checked,
                 editing = editing,
                 onToggle = { onToggle(planned.id) },
@@ -396,6 +409,8 @@ private fun PlannedExerciseRow(
     name: String,
     sets: Int,
     reps: Int,
+    weight: Double,
+    metric: Boolean,
     checked: Boolean,
     editing: Boolean,
     onToggle: () -> Unit,
@@ -431,7 +446,7 @@ private fun PlannedExerciseRow(
                     modifier = Modifier.fillMaxWidth(),
                 )
                 LightText(
-                    text = "$sets × $reps",
+                    text = exerciseDetail(sets, reps, weight, metric),
                     variant = LightTextVariant.Detail,
                     lighten = true,
                 )

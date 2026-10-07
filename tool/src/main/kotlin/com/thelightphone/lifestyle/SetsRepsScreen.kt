@@ -22,18 +22,24 @@ import kotlinx.coroutines.flow.asStateFlow
 internal data class SetsReps(
     val sets: Int,
     val reps: Int,
+    val weight: Double,
 )
 
 internal class SetsRepsViewModel(
     val exerciseName: String,
     sets: Int,
     reps: Int,
+    weight: Double,
+    private val metric: Boolean,
 ) : LightViewModel<SetsReps>() {
     private val _sets = MutableStateFlow(sets.coerceIn(1, MAX_COUNT).toString())
     val sets: StateFlow<String> = _sets.asStateFlow()
 
     private val _reps = MutableStateFlow(reps.coerceIn(1, MAX_COUNT).toString())
     val reps: StateFlow<String> = _reps.asStateFlow()
+
+    private val _weight = MutableStateFlow(weightEntry(weight, metric))
+    val weight: StateFlow<String> = _weight.asStateFlow()
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
@@ -60,11 +66,28 @@ internal class SetsRepsViewModel(
         }
     }
 
+    fun setWeight(raw: String) {
+        val parsed = parseAmount(raw)
+        if (parsed == null) {
+            _error.value = "Enter a number."
+        } else {
+            _weight.value = formatAmount(parsed)
+        }
+    }
+
     fun result(): SetsReps? {
         val sets = parseCount(_sets.value) ?: return null
         val reps = parseCount(_reps.value) ?: return null
-        return SetsReps(sets, reps)
+        val entered = parseAmount(_weight.value) ?: return null
+        val pounds = if (metric) poundsFromKilograms(entered) else entered
+        return SetsReps(sets, reps, pounds)
     }
+}
+
+private fun weightEntry(pounds: Double, metric: Boolean): String {
+    if (pounds <= 0.0) return "0"
+    val amount = if (metric) pounds * 0.45359237 else pounds
+    return formatAmount(amount)
 }
 
 internal class SetsRepsScreen(
@@ -72,16 +95,20 @@ internal class SetsRepsScreen(
     private val exerciseName: String,
     private val initialSets: Int,
     private val initialReps: Int,
+    private val initialWeight: Double,
+    private val metric: Boolean,
 ) : LightScreen<SetsReps, SetsRepsViewModel>(activity) {
 
     override val viewModelClass: Class<SetsRepsViewModel> = SetsRepsViewModel::class.java
 
-    override fun createViewModel() = SetsRepsViewModel(exerciseName, initialSets, initialReps)
+    override fun createViewModel() =
+        SetsRepsViewModel(exerciseName, initialSets, initialReps, initialWeight, metric)
 
     @Composable
     override fun Content() {
         val sets by viewModel.sets.collectAsState()
         val reps by viewModel.reps.collectAsState()
+        val weight by viewModel.weight.collectAsState()
         val error by viewModel.error.collectAsState()
 
         LifestyleScaffold(
@@ -141,6 +168,23 @@ internal class SetsRepsScreen(
                             allowDecimal = false,
                         )
                     }) { value -> viewModel.setReps(value) }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 1f.gridUnitsAsDp()),
+            )
+            LightTextField(
+                label = if (metric) "Weight (kg)" else "Weight (lb)",
+                value = weight,
+                placeholder = "0",
+                onClick = {
+                    navigateTo({
+                        DialpadScreen(
+                            it,
+                            title = "Weight",
+                            initialValue = weight,
+                        )
+                    }) { value -> viewModel.setWeight(value) }
                 },
                 modifier = Modifier
                     .fillMaxWidth()

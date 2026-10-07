@@ -2,7 +2,7 @@ package com.thelightphone.lifestyle
 
 import java.io.File
 import java.io.IOException
-import java.time.DayOfWeek
+import java.time.LocalDate
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -115,36 +115,46 @@ internal class LifestyleRepository(
         )
     }
 
-    suspend fun addGroup(weekday: DayOfWeek, name: String): Boolean =
-        mutate { it.addGroup(weekday, name) }
+    suspend fun addGroup(date: LocalDate, name: String): Boolean =
+        mutate { it.addGroupOn(date, name) }
 
-    suspend fun renameGroup(groupId: String, name: String): Boolean =
-        mutate { it.renameGroup(groupId, name) }
+    suspend fun renameGroup(date: LocalDate, groupId: String, name: String): Boolean =
+        mutate { it.renameGroupOn(date, groupId, name) }
 
-    suspend fun deleteGroup(groupId: String): Boolean = mutate { it.deleteGroup(groupId) }
+    suspend fun deleteGroup(date: LocalDate, groupId: String): Boolean =
+        mutate { it.deleteGroupOn(date, groupId) }
 
     suspend fun addPlannedExercise(
+        date: LocalDate,
         groupId: String,
         exerciseId: String,
         sets: Int,
         reps: Int,
+        weight: Double,
     ): Boolean = mutate {
-        it.addPlanned(
+        it.addPlannedOn(
+            date,
             groupId,
             PlannedExercise(
                 id = newId(),
                 exerciseId = exerciseId,
                 sets = sets,
                 reps = reps,
+                weight = weight,
             ),
         )
     }
 
-    suspend fun updatePlannedExercise(plannedId: String, sets: Int, reps: Int): Boolean =
-        mutate { it.updatePlanned(plannedId, sets, reps) }
+    suspend fun updatePlannedExercise(
+        date: LocalDate,
+        plannedId: String,
+        sets: Int,
+        reps: Int,
+        weight: Double,
+    ): Boolean = mutate { it.updatePlannedOn(date, plannedId, sets, reps, weight) }
 
-    suspend fun deletePlannedExercise(plannedId: String): Boolean =
-        mutate { it.deletePlanned(plannedId) }
+    suspend fun deletePlannedExercise(date: LocalDate, plannedId: String): Boolean =
+        mutate { it.deletePlannedOn(date, plannedId) }
 
     suspend fun toggleCheck(date: String, plannedId: String): Boolean =
         mutate { it.toggleCheck(date, plannedId) }
