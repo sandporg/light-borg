@@ -7,12 +7,15 @@ import java.util.Locale
  *
  * Add an entry here to show it on Today, meals, and goals. Logged amounts and
  * goals are stored by [Nutrient.id], so existing saves keep working.
+ * Set [Nutrient.hiddenByDefault] so a new nutrient stays off the home screen
+ * until the user turns it on in Goals.
  */
 internal data class Nutrient(
     val id: String,
     val label: String,
     val unit: String,
     val defaultGoal: Double,
+    val hiddenByDefault: Boolean = false,
 ) {
     fun fieldLabel(): String = "$label ($unit)"
 }
@@ -30,9 +33,39 @@ internal object Nutrients {
         Nutrient("fiber", "Fiber", "g", 28.0),
         Nutrient("sugar", "Sugar", "g", 50.0),
         Nutrient("potassium", "Potassium", "mg", 3400.0),
+        Nutrient("saturated_fat", "Saturated fat", "g", 20.0, hiddenByDefault = true),
+        Nutrient("cholesterol", "Cholesterol", "mg", 300.0, hiddenByDefault = true),
+        Nutrient("calcium", "Calcium", "mg", 1300.0, hiddenByDefault = true),
+        Nutrient("iron", "Iron", "mg", 18.0, hiddenByDefault = true),
+        Nutrient("vitamin_d", "Vitamin D", "mcg", 20.0, hiddenByDefault = true),
+        Nutrient("vitamin_a", "Vitamin A", "mcg", 900.0, hiddenByDefault = true),
+        Nutrient("vitamin_c", "Vitamin C", "mg", 90.0, hiddenByDefault = true),
+        Nutrient("vitamin_e", "Vitamin E", "mg", 15.0, hiddenByDefault = true),
+        Nutrient("vitamin_k", "Vitamin K", "mcg", 120.0, hiddenByDefault = true),
+        Nutrient("thiamin", "Thiamin", "mg", 1.2, hiddenByDefault = true),
+        Nutrient("riboflavin", "Riboflavin", "mg", 1.3, hiddenByDefault = true),
+        Nutrient("niacin", "Niacin", "mg", 16.0, hiddenByDefault = true),
+        Nutrient("vitamin_b6", "Vitamin B6", "mg", 1.7, hiddenByDefault = true),
+        Nutrient("folate", "Folate", "mcg", 400.0, hiddenByDefault = true),
+        Nutrient("vitamin_b12", "Vitamin B12", "mcg", 2.4, hiddenByDefault = true),
+        Nutrient("biotin", "Biotin", "mcg", 30.0, hiddenByDefault = true),
+        Nutrient("pantothenic_acid", "Pantothenic acid", "mg", 5.0, hiddenByDefault = true),
+        Nutrient("phosphorus", "Phosphorus", "mg", 1250.0, hiddenByDefault = true),
+        Nutrient("iodine", "Iodine", "mcg", 150.0, hiddenByDefault = true),
+        Nutrient("magnesium", "Magnesium", "mg", 420.0, hiddenByDefault = true),
+        Nutrient("zinc", "Zinc", "mg", 11.0, hiddenByDefault = true),
+        Nutrient("selenium", "Selenium", "mcg", 55.0, hiddenByDefault = true),
+        Nutrient("copper", "Copper", "mg", 0.9, hiddenByDefault = true),
+        Nutrient("manganese", "Manganese", "mg", 2.3, hiddenByDefault = true),
+        Nutrient("chromium", "Chromium", "mcg", 35.0, hiddenByDefault = true),
+        Nutrient("molybdenum", "Molybdenum", "mcg", 45.0, hiddenByDefault = true),
+        Nutrient("chloride", "Chloride", "mg", 2300.0, hiddenByDefault = true),
+        Nutrient("choline", "Choline", "mg", 550.0, hiddenByDefault = true),
     )
 
     val defaults: Map<String, Double> = all.associate { it.id to it.defaultGoal }
+
+    val hiddenByDefault: List<String> = all.filter { it.hiddenByDefault }.map { it.id }
 
     fun byId(id: String): Nutrient? = all.find { it.id == id }
 }

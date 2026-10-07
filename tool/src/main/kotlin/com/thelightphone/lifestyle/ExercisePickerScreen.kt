@@ -15,7 +15,6 @@ import androidx.lifecycle.viewModelScope
 import com.thelightphone.sdk.LightScreen
 import com.thelightphone.sdk.LightViewModel
 import com.thelightphone.sdk.SealedLightActivity
-import com.thelightphone.sdk.ui.LightIcons
 import com.thelightphone.sdk.ui.LightLazyScrollView
 import com.thelightphone.sdk.ui.LightText
 import com.thelightphone.sdk.ui.LightTextField
@@ -130,8 +129,9 @@ internal class ExercisePickerScreen(
                                 it,
                                 title = "Search",
                                 initialValue = query,
-                                submitLabel = "Search",
-                                submitIcon = LightIcons.SEARCH,
+                                submitLabel = "SAVE",
+                                showBackButton = false,
+                                centerClose = true,
                             )
                         }) { value -> viewModel.setQuery(value) }
                     },

@@ -83,7 +83,19 @@ internal fun newUserExerciseId(): String = "user-${UUID.randomUUID()}"
 
 internal fun encodeLifestyle(data: LifestyleData): String = lifestyleJson.encodeToString(data)
 
-internal fun decodeLifestyle(text: String): LifestyleData = lifestyleJson.decodeFromString(text)
+internal const val LIFESTYLE_DATA_VERSION = 2
+
+internal fun decodeLifestyle(text: String): LifestyleData =
+    lifestyleJson.decodeFromString<LifestyleData>(text).migrated()
+
+internal fun LifestyleData.migrated(): LifestyleData {
+    if (version >= LIFESTYLE_DATA_VERSION) return this
+    val hidden = (hiddenNutrients + Nutrients.hiddenByDefault)
+        .filter { it != Nutrients.CALORIES }
+        .distinct()
+        .sorted()
+    return copy(version = LIFESTYLE_DATA_VERSION, hiddenNutrients = hidden)
+}
 
 internal fun dateOnWeek(anchor: LocalDate, weekday: DayOfWeek): LocalDate {
     val sunday = anchor.with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY))
@@ -104,6 +116,11 @@ internal fun weekdayName(day: DayOfWeek): String = when (day) {
 internal fun shortDate(date: LocalDate): String {
     val month = date.month.getDisplayName(TextStyle.SHORT, Locale.US)
     return "$month ${date.dayOfMonth}"
+}
+
+internal fun monthYearTitle(month: YearMonth): String {
+    val name = month.month.getDisplayName(TextStyle.FULL, Locale.US)
+    return "$name ${month.year}"
 }
 
 internal fun compactDateTitle(date: LocalDate): String {

@@ -83,15 +83,14 @@ internal class GoalsScreen(
                 emptyList()
             } else if (editing) {
                 listOf(
-                    null,
-                    closeButton { goBack() },
                     textButton("DONE") { viewModel.setEditing(false) },
+                    null,
                 )
             } else {
                 listOf(
-                    null,
-                    closeButton { goBack() },
                     textButton("EDIT") { viewModel.setEditing(true) },
+                    closeButton { goBack() },
+                    null,
                 )
             },
             errorMessage = localError ?: saveError,
@@ -127,6 +126,9 @@ internal class GoalsScreen(
                                                 it,
                                                 title = nutrient.fieldLabel(),
                                                 initialValue = formatAmount(amount),
+                                                submitLabel = "SAVE",
+                                                showBackButton = false,
+                                                centerClose = true,
                                             )
                                         }) { value -> viewModel.setGoal(nutrient.id, value) }
                                     },

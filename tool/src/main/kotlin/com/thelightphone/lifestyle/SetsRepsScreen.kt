@@ -120,6 +120,9 @@ internal class SetsRepsScreen(
                             it,
                             title = "Sets",
                             initialValue = sets,
+                            submitLabel = "SAVE",
+                            showBackButton = false,
+                            centerClose = true,
                         )
                     }) { value -> viewModel.setSets(value) }
                 },
@@ -137,6 +140,9 @@ internal class SetsRepsScreen(
                             it,
                             title = "Reps",
                             initialValue = reps,
+                            submitLabel = "SAVE",
+                            showBackButton = false,
+                            centerClose = true,
                         )
                     }) { value -> viewModel.setReps(value) }
                 },

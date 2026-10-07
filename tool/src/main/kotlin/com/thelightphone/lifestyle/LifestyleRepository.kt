@@ -141,13 +141,20 @@ internal class LifestyleRepository(
 
     private suspend fun readStored(): LifestyleData {
         val file = File(filesDir, LIFESTYLE_STORE_FILE)
-        if (!file.exists()) return LifestyleData()
+        if (!file.exists()) return LifestyleData().migrated()
         val text = withContext(Dispatchers.IO) { runCatching { file.readText() }.getOrNull() }
         if (text == null) {
             _error.value = "Saved data could not be read. Starting fresh."
-            return LifestyleData()
+            return LifestyleData().migrated()
         }
-        return runCatching { decodeLifestyle(text) }.getOrElse {
+        return runCatching {
+            val parsed = lifestyleJson.decodeFromString<LifestyleData>(text)
+            val migrated = parsed.migrated()
+            if (migrated.version != parsed.version) {
+                withContext(Dispatchers.IO) { write(migrated) }
+            }
+            migrated
+        }.getOrElse {
             withContext(Dispatchers.IO) {
                 runCatching { file.copyTo(File(filesDir, "$LIFESTYLE_STORE_FILE.bak"), overwrite = true) }
             }

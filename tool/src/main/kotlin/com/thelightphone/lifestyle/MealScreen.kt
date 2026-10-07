@@ -221,6 +221,9 @@ internal class MealScreen(
                                         title = "Name",
                                         initialValue = current.name,
                                         initialCaps = current.name.isBlank(),
+                                        submitLabel = "SAVE",
+                                        showBackButton = false,
+                                        centerClose = true,
                                     )
                                 }) { value -> viewModel.setName(value) }
                             },
@@ -231,6 +234,9 @@ internal class MealScreen(
                                         it,
                                         title = nutrient.fieldLabel(),
                                         initialValue = formatAmount(amount),
+                                        submitLabel = "SAVE",
+                                        showBackButton = false,
+                                        centerClose = true,
                                     )
                                 }) { value -> viewModel.setAmount(nutrient.id, value) }
                             },

@@ -47,6 +47,7 @@ class LifestyleLogicTest {
         assertEquals("2026-10-12", nextMonday)
         assertEquals("Oct 6", shortDate(tuesday))
         assertEquals("Tue Oct 6", compactDateTitle(tuesday))
+        assertEquals("October 2026", monthYearTitle(java.time.YearMonth.of(2026, 10)))
         assertEquals(DayOfWeek.SUNDAY, dateOnWeek(tuesday, DayOfWeek.SUNDAY).dayOfWeek)
 
         val data = LifestyleData().toggleCheck(thisMonday, "planned")
@@ -60,6 +61,19 @@ class LifestyleLogicTest {
         assertEquals(listOf("protein"), hidden.hiddenNutrients)
         assertTrue(hidden.withNutrientVisible("protein", true).hiddenNutrients.isEmpty())
         assertTrue(hidden.withNutrientVisible(Nutrients.CALORIES, false).hiddenNutrients == listOf("protein"))
+
+        val legacy = decodeLifestyle(
+            """{"version":1,"goals":{},"meals":[],"savedMeals":[],"userExercises":[],"groups":[],"checks":[],"hiddenNutrients":["protein"]}""",
+        )
+        assertEquals(2, legacy.version)
+        assertTrue(legacy.isNutrientHidden("protein"))
+        assertTrue(legacy.isNutrientHidden("vitamin_c"))
+        assertTrue(legacy.isNutrientHidden("saturated_fat"))
+        assertFalse(legacy.isNutrientHidden("fat"))
+        assertFalse(legacy.isNutrientHidden(Nutrients.CALORIES))
+        assertFalse(legacy.withNutrientVisible("vitamin_c", true).isNutrientHidden("vitamin_c"))
+        assertTrue(LifestyleData().migrated().isNutrientHidden("iron"))
+        assertFalse(LifestyleData().migrated().isNutrientHidden("protein"))
 
         val cells = monthCells(java.time.YearMonth.of(2026, 10))
         assertEquals(null, cells.first())

@@ -126,7 +126,7 @@ internal class MealsScreen(
         val meals = data.meals.filter { it.date == shownDate.toString() }
 
         LifestyleScaffold(
-            title = compactDateTitle(shownDate),
+            title = if (viewingMonth) monthYearTitle(visibleMonth) else compactDateTitle(shownDate),
             onTitleClick = viewModel::toggleCalendar,
             leftButton = chevronButton(previous = true) {
                 if (viewingMonth) viewModel.shiftMonth(-1) else viewModel.shiftDay(-1)
@@ -142,6 +142,11 @@ internal class MealsScreen(
                 editing -> listOf(
                     textButton("DONE") { viewModel.setEditing(false) },
                     null,
+                )
+                meals.isEmpty() -> listOf(
+                    null,
+                    closeButton("Home") { goBack() },
+                    textButton("ADD") { openAdd(shownDate) },
                 )
                 else -> listOf(
                     textButton("EDIT") { viewModel.setEditing(true) },
@@ -343,8 +348,9 @@ internal class SavedMealPickerScreen(
                                 it,
                                 title = "Search",
                                 initialValue = query,
-                                submitLabel = "Search",
-                                submitIcon = LightIcons.SEARCH,
+                                submitLabel = "SAVE",
+                                showBackButton = false,
+                                centerClose = true,
                             )
                         }) { value -> viewModel.setQuery(value) }
                     },

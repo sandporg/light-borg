@@ -163,7 +163,7 @@ internal class WorkoutScreen(
         val names = exercises.associateBy { it.id }
 
         LifestyleScaffold(
-            title = compactDateTitle(selectedDate),
+            title = if (viewingMonth) monthYearTitle(visibleMonth) else compactDateTitle(selectedDate),
             onTitleClick = viewModel::toggleCalendar,
             leftButton = chevronButton(previous = true) {
                 if (viewingMonth) viewModel.shiftMonth(-1) else viewModel.shiftDay(-1)
@@ -179,6 +179,11 @@ internal class WorkoutScreen(
                 editing -> listOf(
                     textButton("DONE") { viewModel.setEditing(false) },
                     null,
+                )
+                groups.isEmpty() -> listOf(
+                    null,
+                    closeButton("Home") { goBack() },
+                    textButton("ADD") { promptForGroup() },
                 )
                 else -> listOf(
                     textButton("EDIT") { viewModel.setEditing(true) },
