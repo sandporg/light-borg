@@ -27,12 +27,14 @@ fun LightTextField(
     placeholder: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    lighten: Boolean = false,
 ) {
     val colors = LightThemeTokens.colors
     Column(modifier = modifier.fillMaxWidth()) {
         LightText(
             text = label,
             variant = LightTextVariant.Detail,
+            lighten = lighten,
             modifier = Modifier.padding(top = 1f.gridUnitsAsDp()),
         )
         val isPlaceholder = value.isBlank()
@@ -45,6 +47,7 @@ fun LightTextField(
             LightText(
                 text = if (isPlaceholder) placeholder else value,
                 variant = LightTextVariant.Copy,
+                lighten = lighten,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.fillMaxWidth(),
@@ -54,7 +57,7 @@ fun LightTextField(
                 modifier = Modifier
                     .fillMaxWidth(UNDERLINE_WIDTH_FRACTION)
                     .height(UNDERLINE_THICKNESS_PX.designVerticalPxToDp())
-                    .background(colors.content),
+                    .background(if (lighten) colors.contentSecondary else colors.content),
             )
         }
     }

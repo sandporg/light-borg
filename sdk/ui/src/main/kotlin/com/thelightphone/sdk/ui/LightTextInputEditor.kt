@@ -58,6 +58,7 @@ fun LightTextInputEditor(
     singleLine: Boolean = false,
     initialCaps: Boolean = false,
     editorKey: Any = remember { Any() },
+    bottomItems: List<LightBottomBarItem?>? = null,
 ) {
     val currentOnSubmit by rememberUpdatedState(onSubmit)
     val hapticsEnabled = LocalHapticsEnabled.current
@@ -90,6 +91,7 @@ fun LightTextInputEditor(
         submitIcon,
         showBackButton,
         singleLine,
+        bottomItems,
     )
 }
 
@@ -112,6 +114,7 @@ fun LightTextInputEditor(
     submitIcon: LightIconConfiguration? = null,
     showBackButton: Boolean = true,
     singleLine: Boolean = false,
+    bottomItems: List<LightBottomBarItem?>? = null,
 ) {
     val colors = LightThemeTokens.colors
     val inputStyle = lightInputTextStyle()
@@ -200,7 +203,7 @@ fun LightTextInputEditor(
                 bottomBar = {
                     LightBottomBar(
                         topPadding = 0.dp,
-                        items = listOf(
+                        items = bottomItems ?: listOf(
                             when (submitIcon) {
                                 null -> LightBarButton.Text(
                                     text = submitLabel,
